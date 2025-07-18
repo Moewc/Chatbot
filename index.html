@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Math Chatbot with Variables, OCR & Sidebar</title>
+<title>Math Chatbot with Variables, OCR & Mode Toggle</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
 <style>
@@ -14,74 +14,21 @@
     color: white;
     height: 100vh;
     display: flex;
+    justify-content: center;
+    align-items: center;
     overflow: hidden;
-  }
-  /* Sidebar styles */
-  .sidebar {
-    width: 280px;
-    background-color: #1e1e1e;
-    border-right: 1px solid #333;
-    display: flex;
-    flex-direction: column;
-    padding: 12px 8px;
-  }
-  .sidebar h2 {
-    font-size: 1.5rem;
-    margin: 0 0 12px 12px;
-    border-bottom: 1px solid #444;
-    padding-bottom: 8px;
-  }
-  .new-chat-btn {
-    background-color: #ff6a00;
-    border: none;
-    color: white;
-    font-weight: bold;
-    padding: 10px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    margin-bottom: 12px;
-    transition: background 0.3s;
-  }
-  .new-chat-btn:hover {
-    background-color: #e65c00;
-  }
-  .chat-list {
-    flex-grow: 1;
-    overflow-y: auto;
-  }
-  .chat-list-item {
-    background-color: #2c2c2c;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .chat-list-item:hover {
-    background-color: #ff6a00;
-    color: white;
-  }
-  .chat-list-item.active {
-    background-color: #ff6a00;
-    color: white;
-    font-weight: bold;
   }
 
-  /* Main container */
   .container {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    max-width: 460px;
+    width: 100%;
+    max-width: 700px; /* slightly wider container */
     background-color: #1e1e1e;
     border-radius: 12px;
     box-shadow: 0 0 15px rgba(255, 106, 0, 0.3);
     overflow: hidden;
     height: 90vh;
-    margin: auto;
+    display: flex;
+    flex-direction: column;
   }
   .header {
     background-color: #2c2c2c;
@@ -101,6 +48,8 @@
     word-wrap: break-word;
     white-space: pre-wrap;
     background: #121212;
+    width: 100%;
+    box-sizing: border-box;
   }
   .msg {
     padding: 12px 16px;
@@ -217,11 +166,6 @@
 </style>
 </head>
 <body>
-  <div class="sidebar">
-    <h2>Chats</h2>
-    <button class="new-chat-btn" id="newChatBtn">+ New Chat</button>
-    <div class="chat-list" id="chatList"></div>
-  </div>
 
   <div class="container">
     <div class="header">Math Chatbot</div>
@@ -244,20 +188,9 @@
   const imageBtn = document.getElementById('imageBtn');
   const imageInput = document.getElementById('imageInput');
   const modeToggleBtn = document.getElementById('modeToggle');
-  const newChatBtn = document.getElementById('newChatBtn');
-  const chatList = document.getElementById('chatList');
 
   // Store variables here
   let variables = {};
-
-  // Keep current chat messages in memory (array of {sender,message})
-  let currentChatMessages = [];
-
-  // Chat sessions storage key
-  const STORAGE_KEY = 'math_chatbot_sessions';
-
-  // Current loaded chat index (-1 = new chat)
-  let currentChatIndex = -1;
 
   // Append message helper
   function appendMessage(message, sender = 'bot', isError = false) {
@@ -266,7 +199,6 @@
     msg.textContent = message;
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
-    currentChatMessages.push({sender, message});
   }
 
   function appendHTMLMessage(htmlContent, sender = 'user') {
@@ -275,100 +207,6 @@
     msg.innerHTML = htmlContent;
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
-    currentChatMessages.push({sender, message: htmlContent});
-  }
-
-  // Save sessions to localStorage
-  function saveSessions(sessions) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-  }
-
-  // Load sessions from localStorage
-  function loadSessions() {
-    const sessions = localStorage.getItem(STORAGE_KEY);
-    return sessions ? JSON.parse(sessions) : [];
-  }
-
-  // Save current chat as a new session or update existing
-  function saveCurrentChat() {
-    let sessions = loadSessions();
-    const timestamp = new Date().toISOString();
-
-    const sessionData = {
-      timestamp,
-      messages: currentChatMessages,
-      variables
-    };
-
-    if (currentChatIndex === -1) {
-      // New chat - add it
-      sessions.push(sessionData);
-      currentChatIndex = sessions.length - 1;
-    } else {
-      // Update existing chat
-      sessions[currentChatIndex] = sessionData;
-    }
-
-    saveSessions(sessions);
-    renderChatList();
-  }
-
-  // Render chat list sidebar
-  function renderChatList() {
-    const sessions = loadSessions();
-    chatList.innerHTML = '';
-    sessions.forEach((session, i) => {
-      const date = new Date(session.timestamp);
-      const label = date.toLocaleString();
-
-      const item = document.createElement('div');
-      item.className = 'chat-list-item' + (i === currentChatIndex ? ' active' : '');
-      item.textContent = label;
-      item.title = 'Click to load chat from ' + label;
-      item.addEventListener('click', () => {
-        loadChat(i);
-      });
-      chatList.appendChild(item);
-    });
-  }
-
-  // Load a chat session from index
-  function loadChat(index) {
-    const sessions = loadSessions();
-    if (index < 0 || index >= sessions.length) return;
-
-    currentChatIndex = index;
-    const session = sessions[index];
-
-    // Reset UI
-    variables = session.variables || {};
-    currentChatMessages = [...session.messages];
-    chatBox.innerHTML = '';
-
-    // Append all messages
-    currentChatMessages.forEach(({sender, message}) => {
-      if (sender === 'user') {
-        // Distinguish if message is HTML (like image)
-        if (message.startsWith('<img')) {
-          appendHTMLMessage(message, sender);
-        } else {
-          appendMessage(message, sender);
-        }
-      } else {
-        appendMessage(message, sender);
-      }
-    });
-
-    renderChatList();
-  }
-
-  // Start a new chat (clear variables & chatbox)
-  function startNewChat() {
-    variables = {};
-    currentChatMessages = [];
-    currentChatIndex = -1;
-    chatBox.innerHTML = '';
-    renderChatList();
   }
 
   // Basic preprocessing to remove filler words and convert to math symbols
@@ -416,30 +254,23 @@
   }
 
   function solveMathOrWordProblem(input) {
-    // Trim and lowercase
     input = input.trim();
 
-    // Handle "If x=2 then x+2" style:
     const ifThenMatch = input.match(/if (.+) then (.+)/i);
     if (ifThenMatch) {
       try {
         const assignmentsPart = ifThenMatch[1].trim();
         const exprPart = ifThenMatch[2].trim();
 
-        // Support multiple assignments separated by comma
         const assigns = assignmentsPart.split(',').map(s => s.trim());
-
-        // Temp variables object for this expression
         const tempVars = { ...variables };
 
         assigns.forEach(assign => {
           const [v, val] = assign.split('=').map(s => s.trim());
           if (!v || !val) throw new Error('Invalid assignment');
-          // Evaluate val using current variables & mathjs
           tempVars[v] = math.evaluate(val, tempVars);
         });
 
-        // Now evaluate exprPart with tempVars
         const result = math.evaluate(exprPart, tempVars);
         return `Answer: ${result}`;
       } catch (e) {
@@ -447,7 +278,6 @@
       }
     }
 
-    // Handle simple variable assignment: "x = 2"
     const assignMatch = input.match(/^([a-z]+)\s*=\s*(.+)$/i);
     if (assignMatch) {
       try {
@@ -461,7 +291,6 @@
       }
     }
 
-    // Try to evaluate math expression with current variables
     try {
       const preprocessed = preprocess(input);
       const val = math.evaluate(preprocessed, variables);
@@ -471,12 +300,12 @@
     }
   }
 
-  let isMathMode = true; // default mode
+  let isMathMode = true;
 
   function updateModeUI() {
-    voiceBtn.disabled = !isMathMode;
+    // Voice input enabled in both modes now
     imageBtn.disabled = !isMathMode;
-    voiceBtn.title = isMathMode ? "Start voice input" : "Disabled in Search mode";
+    voiceBtn.title = isMathMode ? "Start voice input" : "Start voice input (Search mode)";
     imageBtn.title = isMathMode ? "Upload screenshot 📷" : "Disabled in Search mode";
     modeToggleBtn.textContent = `Mode: ${isMathMode ? 'Math' : 'Search'}`;
     chatInput.placeholder = isMathMode
@@ -505,14 +334,12 @@
         appendMessage("Sorry, I couldn't solve that.", 'bot', true);
       }
     } else {
-      // Web search mode: open google search in new tab
       const query = encodeURIComponent(input);
       window.open(`https://www.google.com/search?q=${query}`, '_blank');
       appendMessage(`🔍 Searching the web for: "${input}"`, 'bot');
     }
 
     chatInput.value = '';
-    saveCurrentChat();
   });
 
   // Voice recognition setup
@@ -523,17 +350,22 @@
     recognition.continuous = false;
 
     voiceBtn.addEventListener('click', () => {
-      if (!isMathMode) return; // disable voice in search mode
       recognition.start();
       voiceBtn.textContent = '🎙️';
     });
 
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      chatInput.value = transcript;
-      chatInput.focus();
-      voiceBtn.textContent = '🎤';
-      chatForm.dispatchEvent(new Event('submit'));
+      if (isMathMode) {
+        chatInput.value = transcript;
+        chatInput.focus();
+        voiceBtn.textContent = '🎤';
+        chatForm.dispatchEvent(new Event('submit'));
+      } else {
+        voiceBtn.textContent = '🎤';
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(transcript)}`, '_blank');
+        appendMessage(`🔍 Searching the web for: "${transcript}"`, 'bot');
+      }
     };
 
     recognition.onerror = () => {
@@ -547,7 +379,7 @@
 
   // OCR + image upload
   imageBtn.addEventListener('click', () => {
-    if (!isMathMode) return; // disable image upload in search mode
+    if (!isMathMode) return;
     imageInput.click();
   });
 
@@ -567,7 +399,6 @@
 
       const { data: { text } } = await Tesseract.recognize(file, 'eng');
 
-      // Remove "Processing image..." message
       chatBox.removeChild(processingMsg);
 
       const extracted = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
@@ -584,8 +415,6 @@
         appendMessage("Sorry, I couldn't solve that.", 'bot', true);
       }
 
-      saveCurrentChat();
-
     } catch (err) {
       if (processingMsg.parentNode) chatBox.removeChild(processingMsg);
       appendMessage("Error processing image.", 'bot', true);
@@ -594,16 +423,7 @@
     }
   });
 
-  newChatBtn.addEventListener('click', () => {
-    if (!confirm('Start a new chat? Current chat will be saved automatically.')) return;
-    startNewChat();
-  });
-
-  // Initialize UI state and render chat list
   updateModeUI();
-  renderChatList();
-  // Start with a new chat by default
-  startNewChat();
 </script>
 </body>
 </html>
