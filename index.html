@@ -1,172 +1,170 @@
+<!-- Everything bundled in one complete HTML file -->
+<!-- Save this as math-chatbot.html and open in your browser -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Math Chatbot with Variables, OCR & Mode Toggle</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
-<style>
-  body {
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #121212;
-    color: white;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-  }
-
-  .container {
-    width: 100%;
-    max-width: 700px; /* slightly wider container */
-    background-color: #1e1e1e;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(255, 106, 0, 0.3);
-    overflow: hidden;
-    height: 90vh;
-    display: flex;
-    flex-direction: column;
-  }
-  .header {
-    background-color: #2c2c2c;
-    padding: 16px;
-    font-size: 1.4rem;
-    font-weight: bold;
-    text-align: center;
-    border-bottom: 1px solid #444;
-  }
-  .chat-box {
-    padding: 16px;
-    flex-grow: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    background: #121212;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .msg {
-    padding: 12px 16px;
-    border-radius: 20px;
-    max-width: 80%;
-    animation: fadeIn 0.3s ease;
-  }
-  .msg.user {
-    align-self: flex-end;
-    background-color: #ff6a00;
-    color: white;
-    border-bottom-right-radius: 0;
-  }
-  .msg.bot {
-    align-self: flex-start;
-    background-color: #3a3a3a;
-    color: white;
-    border-bottom-left-radius: 0;
-  }
-  .msg.error {
-    background-color: #ff4d4d;
-    color: white;
-  }
-  .input-area {
-    display: flex;
-    gap: 10px;
-    padding: 12px;
-    background: #1e1e1e;
-    border-top: 1px solid #333;
-    flex-wrap: wrap;
-  }
-  input[type="text"] {
-    flex: 1 1 auto;
-    padding: 12px 16px;
-    border: none;
-    border-radius: 20px;
-    font-size: 1rem;
-    background: #2a2a2a;
-    color: white;
-    min-width: 150px;
-  }
-  input[type="text"]::placeholder {
-    color: #aaa;
-  }
-  button[type="submit"] {
-    background: #ff6a00;
-    border: none;
-    padding: 12px 18px;
-    border-radius: 20px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
-    flex: 0 0 auto;
-  }
-  button[type="submit"]:hover {
-    background: #e65c00;
-    transform: scale(1.05);
-  }
-  .voice-btn, .image-btn {
-    background: #2c2c2c;
-    border: 2px solid #ff6a00;
-    color: #ff6a00;
-    padding: 10px;
-    border-radius: 50%;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-  }
-  .voice-btn:hover:not(:disabled), .image-btn:hover:not(:disabled) {
-    background: #ff6a00;
-    color: white;
-    transform: scale(1.05);
-  }
-  .voice-btn:disabled, .image-btn:disabled {
-    border-color: #555;
-    color: #555;
-    cursor: not-allowed;
-    background: #1e1e1e;
-  }
-  #imageInput {
-    display: none;
-  }
-  .msg img {
-    max-width: 80%;
-    border-radius: 12px;
-    margin-bottom: 8px;
-    display: block;
-  }
-  #modeToggle {
-    background: #444;
-    border: none;
-    padding: 12px 14px;
-    border-radius: 20px;
-    color: #ff6a00;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
-    flex: 0 0 auto;
-  }
-  #modeToggle:hover {
-    background: #ff6a00;
-    color: white;
-    transform: scale(1.05);
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Math Chatbot - Premium UI</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #0f0f0f, #1c1c1c);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      width: 95%;
+      max-width: 800px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(20px);
+      background: rgba(30, 30, 30, 0.75);
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(255, 106, 0, 0.2);
+      overflow: hidden;
+      border: 1px solid #333;
+    }
+    .header {
+      padding: 20px;
+      font-size: 1.6rem;
+      font-weight: bold;
+      text-align: center;
+      background: #1f1f1f;
+      border-bottom: 1px solid #333;
+      text-shadow: 0 0 5px #ff6a00;
+    }
+    .chat-box {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+    .chat-box::-webkit-scrollbar { width: 8px; }
+    .chat-box::-webkit-scrollbar-thumb {
+      background-color: #ff6a00;
+      border-radius: 10px;
+    }
+    .msg {
+      max-width: 80%;
+      padding: 14px 18px;
+      border-radius: 20px;
+      font-size: 1rem;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(to right, #ff6a00, #ff9900);
+      color: white;
+      border-bottom-right-radius: 0;
+    }
+    .msg.bot {
+      align-self: flex-start;
+      background: #292929;
+      color: white;
+      border-bottom-left-radius: 0;
+    }
+    .msg.error { background-color: #d32f2f; color: white; }
+    .msg img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-top: 8px;
+    }
+    .input-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 16px;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+    }
+    input[type="text"] {
+      flex: 1 1 auto;
+      padding: 14px 18px;
+      border-radius: 25px;
+      background: #2c2c2c;
+      color: white;
+      font-size: 1rem;
+      border: 1px solid #444;
+      transition: border 0.3s;
+    }
+    input[type="text"]:focus {
+      border: 1px solid #ff6a00;
+      outline: none;
+    }
+    button {
+      border: none;
+      padding: 12px 16px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    button[type="submit"] {
+      background: #ff6a00;
+      color: white;
+    }
+    button[type="submit"]:hover {
+      background: #e65c00;
+      transform: scale(1.05);
+      box-shadow: 0 0 10px #ff6a00aa;
+    }
+    .voice-btn,
+    .image-btn {
+      background: transparent;
+      color: #ff6a00;
+      border: 2px solid #ff6a00;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .voice-btn:hover,
+    .image-btn:hover {
+      background: #ff6a00;
+      color: white;
+      transform: scale(1.05);
+    }
+    .voice-btn:disabled,
+    .image-btn:disabled {
+      border-color: #555;
+      color: #555;
+      background: #1e1e1e;
+      cursor: not-allowed;
+    }
+    #modeToggle {
+      background: #444;
+      color: #ff6a00;
+    }
+    #modeToggle:hover {
+      background: #ff6a00;
+      color: white;
+      transform: scale(1.05);
+    }
+    #imageInput { display: none; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 <body>
-
   <div class="container">
     <div class="header">Math Chatbot</div>
     <div id="chatBox" class="chat-box"></div>
@@ -189,10 +187,8 @@
   const imageInput = document.getElementById('imageInput');
   const modeToggleBtn = document.getElementById('modeToggle');
 
-  // Store variables here
   let variables = {};
 
-  // Append message helper
   function appendMessage(message, sender = 'bot', isError = false) {
     const msg = document.createElement('div');
     msg.className = `msg ${sender}` + (isError ? ' error' : '');
@@ -209,10 +205,8 @@
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // Basic preprocessing to remove filler words and convert to math symbols
   function preprocess(input) {
     let text = input.toLowerCase();
-
     const phrasesToRemove = [
       /\bwhat(?:'s| is)?\b/g,
       /\bwhats\b/g,
@@ -225,59 +219,43 @@
       /\bthen\b/g,
       /\bif\b/g,
     ];
-
-    phrasesToRemove.forEach(pattern => {
-      text = text.replace(pattern, '');
-    });
-
+    phrasesToRemove.forEach(pattern => text = text.replace(pattern, ''));
     text = text
       .replace(/plus/g, '+')
       .replace(/minus/g, '-')
       .replace(/times|multiplied by| x /g, '*')
       .replace(/divided by| over /g, '/')
-      .replace(/to the power of|raised to the power of|raised to|power of/g, '^')
+      .replace(/to the power of|raised to( the)? power of|power of/g, '^')
       .replace(/\bequals\b|=|\bis\b/g, '=')
-      .replace(/percent/g, '%');
-
-    // convert 'number%' to (number/100)
-    text = text.replace(/(\d+)\s*%/g, '($1/100)');
-
-    // convert digit x digit like '2 x 3' to '2*3'
-    text = text.replace(/(\d)\s*x\s*(\d)/g, '$1*$2');
-
-    // Allow letters, digits, math operators, whitespace, parentheses
-    text = text.replace(/[^0-9a-z+\-*/=^%.()]/g, '');
-
-    text = text.replace(/\s+/g, ' ').trim();
-
+      .replace(/percent/g, '%')
+      .replace(/(\d+)\s*%/g, '($1/100)')
+      .replace(/(\d)\s*x\s*(\d)/g, '$1*$2')
+      .replace(/[^0-9a-z+\-*/=^%.()]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
     return text;
   }
 
   function solveMathOrWordProblem(input) {
     input = input.trim();
-
     const ifThenMatch = input.match(/if (.+) then (.+)/i);
     if (ifThenMatch) {
       try {
         const assignmentsPart = ifThenMatch[1].trim();
         const exprPart = ifThenMatch[2].trim();
-
         const assigns = assignmentsPart.split(',').map(s => s.trim());
         const tempVars = { ...variables };
-
         assigns.forEach(assign => {
           const [v, val] = assign.split('=').map(s => s.trim());
           if (!v || !val) throw new Error('Invalid assignment');
           tempVars[v] = math.evaluate(val, tempVars);
         });
-
         const result = math.evaluate(exprPart, tempVars);
         return `Answer: ${result}`;
-      } catch (e) {
-        return 'Error parsing "if...then" expression. Please check your input.';
+      } catch {
+        return 'Error parsing "if...then" expression.';
       }
     }
-
     const assignMatch = input.match(/^([a-z]+)\s*=\s*(.+)$/i);
     if (assignMatch) {
       try {
@@ -290,7 +268,6 @@
         return "Invalid assignment expression.";
       }
     }
-
     try {
       const preprocessed = preprocess(input);
       const val = math.evaluate(preprocessed, variables);
@@ -303,7 +280,6 @@
   let isMathMode = true;
 
   function updateModeUI() {
-    // Voice input enabled in both modes now
     imageBtn.disabled = !isMathMode;
     voiceBtn.title = isMathMode ? "Start voice input" : "Start voice input (Search mode)";
     imageBtn.title = isMathMode ? "Upload screenshot 📷" : "Disabled in Search mode";
@@ -323,37 +299,28 @@
     e.preventDefault();
     const input = chatInput.value.trim();
     if (!input) return;
-
     appendMessage(input, 'user');
-
     if (isMathMode) {
       const answer = solveMathOrWordProblem(input);
-      if (answer) {
-        appendMessage(answer, 'bot');
-      } else {
-        appendMessage("Sorry, I couldn't solve that.", 'bot', true);
-      }
+      if (answer) appendMessage(answer, 'bot');
+      else appendMessage("Sorry, I couldn't solve that.", 'bot', true);
     } else {
       const query = encodeURIComponent(input);
       window.open(`https://www.google.com/search?q=${query}`, '_blank');
       appendMessage(`🔍 Searching the web for: "${input}"`, 'bot');
     }
-
     chatInput.value = '';
   });
 
-  // Voice recognition setup
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRecognition) {
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
     recognition.continuous = false;
-
     voiceBtn.addEventListener('click', () => {
       recognition.start();
       voiceBtn.textContent = '🎙️';
     });
-
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       if (isMathMode) {
@@ -367,7 +334,6 @@
         appendMessage(`🔍 Searching the web for: "${transcript}"`, 'bot');
       }
     };
-
     recognition.onerror = () => {
       voiceBtn.textContent = '🎤';
       alert('Voice input failed. Try again.');
@@ -377,7 +343,6 @@
     voiceBtn.title = "Speech recognition not supported.";
   }
 
-  // OCR + image upload
   imageBtn.addEventListener('click', () => {
     if (!isMathMode) return;
     imageInput.click();
@@ -386,35 +351,25 @@
   imageInput.addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     const processingMsg = document.createElement('div');
     processingMsg.className = 'msg bot';
     processingMsg.textContent = 'Processing image...';
     chatBox.appendChild(processingMsg);
     chatBox.scrollTop = chatBox.scrollHeight;
-
     try {
       const imgURL = URL.createObjectURL(file);
       appendHTMLMessage(`<img src="${imgURL}" alt="Uploaded screenshot" />`, 'user');
-
       const { data: { text } } = await Tesseract.recognize(file, 'eng');
-
       chatBox.removeChild(processingMsg);
-
       const extracted = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       if (!extracted) {
         appendMessage("Couldn't detect any text from image.", 'bot', true);
         return;
       }
       appendMessage(extracted, 'user');
-
       const answer = solveMathOrWordProblem(extracted);
-      if (answer) {
-        appendMessage(answer, 'bot');
-      } else {
-        appendMessage("Sorry, I couldn't solve that.", 'bot', true);
-      }
-
+      if (answer) appendMessage(answer, 'bot');
+      else appendMessage("Sorry, I couldn't solve that.", 'bot', true);
     } catch (err) {
       if (processingMsg.parentNode) chatBox.removeChild(processingMsg);
       appendMessage("Error processing image.", 'bot', true);
