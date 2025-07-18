@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Math Chatbot with OCR & Web Search</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #121212;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 460px;
+      background-color: #1e1e1e;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(255, 106, 0, 0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background-color: #2c2c2c;
+      padding: 16px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid #444;
+    }
+
+    .header::after {
+      content: " 🎤";
+    }
+
+    .chat-box {
+      padding: 16px;
+      flex-grow: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg {
+      padding: 12px 16px;
+      border-radius: 20px;
+      max-width: 80%;
+      animation: fadeIn 0.3s ease;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background-color: #ff6a00;
+      color: white;
+      border-bottom-right-radius: 0;
+    }
+
+    .msg.bot {
+      align-self: flex-start;
+      background-color: #3a3a3a;
+      color: white;
+      border-bottom-left-radius: 0;
+    }
+
+    .msg.error {
+      background-color: #ff4d4d;
+      color: white;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      background: #1e1e1e;
+      border-top: 1px solid #333;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 20px;
+      font-size: 1rem;
+      background: #2a2a2a;
+      color: white;
+    }
+
+    input[type="text"]::placeholder {
+      color: #aaa;
+    }
+
+    button[type="submit"] {
+      background: #ff6a00;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 20px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    button[type="submit"]:hover {
+      background: #e65c00;
+      transform: scale(1.05);
+    }
+
+    .voice-btn, .image-btn {
+      background: #2c2c2c;
+      border: 2px solid #ff6a00;
+      color: #ff6a00;
+      padding: 10px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .voice-btn:hover, .image-btn:hover {
+      background: #ff6a00;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    /* Hide the actual file input */
+    #imageInput {
+      display: none;
+    }
+
+    .msg img {
+      max-width: 80%;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">Math Chatbot</div>
+    <div id="chatBox" class="chat-box"></div>
+    <form id="chatForm" class="input-area" autocomplete="off">
+      <button type="button" id="imageBtn" class="image-btn" title="Upload screenshot 📷">📷</button>
+      <input type="file" id="imageInput" accept="image/*" />
+      <button type="button" id="voiceBtn" class="voice-btn" title="Start voice input">🎤</button>
+      <input id="chatInput" type="text" placeholder="Type or speak your math question..." />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById('chatBox');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const voiceBtn = document.getElementById('voiceBtn');
+    const imageBtn = document.getElementById('imageBtn');
+    const imageInput = document.getElementById('imageInput');
+
+    function appendMessage(message, sender = 'bot', isError = false) {
+      const msg = document.createElement('div');
+      msg.className = `msg ${sender}` + (isError ? ' error' : '');
+      msg.textContent = message;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Helper to append message with HTML content (used for images)
+    function appendHTMLMessage(htmlContent, sender = 'user') {
+      const msg = document.createElement('div');
+      msg.className = `msg ${sender}`;
+      msg.innerHTML = htmlContent;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function preprocess(input) {
+      let text = input.toLowerCase();
+
+      const phrasesToRemove = [
+        /\bwhat(?:'s| is)?\b/g,
+        /\bthe answer (to|of|for)\b/g,
+        /\bplease\b/g,
+        /\bcalculate\b/g,
+        /\bsolve\b/g,
+        /\bfind\b/g,
+        /\banswer\b/g,
+      ];
+
+      phrasesToRemove.forEach(pattern => {
+        text = text.replace(pattern, '');
+      });
+
+      text = text
+        .replace(/plus/g, '+')
+        .replace(/minus/g, '-')
+        .replace(/times|multiplied by| x /g, '*')
+        .replace(/divided by| over /g, '/')
+        .replace(/to the power of|raised to the power of|raised to|power of/g, '^')
+        .replace(/\bequals\b|=|\bis\b/g, '=')
+        .replace(/percent/g, '%');
+
+      // Allow variables like x for quadratic equations and trig
+      text = text.replace(/[^0-9a-z+\-*/=^%.() x]/g, '');
+
+      text = text.replace(/\s+/g, ' ').trim();
+
+      return text;
+    }
+
+    function solveMath(query) {
+      const processed = preprocess(query);
+
+      // Quadratic equation detection: ax^2 + bx + c = 0 (loosely)
+      const quadMatch = processed.match(/^([-+]?[\d.]*)x\^2\s*([-+]\s*[\d.]*)x\s*([-+]\s*[\d.]*)\s*=\s*0$/);
+      if (quadMatch) {
+        try {
+          let a = quadMatch[1].replace(/\s+/g, '');
+          let b = quadMatch[2].replace(/\s+/g, '');
+          let c = quadMatch[3].replace(/\s+/g, '');
+
+          a = (a === '' || a === '+') ? 1 : (a === '-' ? -1 : parseFloat(a));
+          b = (b === '' || b === '+') ? 1 : (b === '-' ? -1 : parseFloat(b));
+          c = parseFloat(c);
+
+          if (isNaN(a) || isNaN(b) || isNaN(c)) throw new Error('Invalid coefficients');
+
+          const discriminant = b*b - 4*a*c;
+          if (discriminant < 0) {
+            return `No real roots (discriminant < 0). Complex roots: ` +
+              `${(-b/(2*a)).toFixed(4)} ± ${(Math.sqrt(-discriminant)/(2*a)).toFixed(4)}i`;
+          } else {
+            const root1 = (-b + Math.sqrt(discriminant)) / (2*a);
+            const root2 = (-b - Math.sqrt(discriminant)) / (2*a);
+            return `Roots: x = ${root1.toFixed(4)}, ${root2.toFixed(4)}`;
+          }
+        } catch {
+          return "Error solving quadratic equation. Please use format: ax^2 + bx + c = 0";
+        }
+      }
+
+      // Percent of number
+      let percentMatch = processed.match(/(\d+(\.\d+)?)%\s*of\s*(\d+(\.\d+)?)/i);
+      if (percentMatch) {
+        let percent = parseFloat(percentMatch[1]);
+        let base = parseFloat(percentMatch[3]);
+        return `${percent}% of ${base} = ${(percent / 100 * base).toFixed(4)}`;
+      }
+
+      // Try evaluating trig and other math expressions
+      try {
+        // math.js expects trig in radians.
+        const result = math.evaluate(processed);
+        return `Answer: ${result}`;
+      } catch {
+        return null;
+      }
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = chatInput.value.trim();
+      if (!input) return;
+
+      appendMessage(input, 'user');
+      chatInput.value = '';
+
+      const answer = solveMath(input);
+      if (answer) {
+        appendMessage(answer, 'bot');
+      } else {
+        appendMessage("Sorry, I couldn't solve that.", 'bot', true);
+      }
+    });
+
+    // Voice Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+
+      voiceBtn.addEventListener('click', () => {
+        recognition.start();
+        voiceBtn.textContent = '🎙️';
+      });
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        chatInput.value = transcript;
+        chatInput.focus();
+        voiceBtn.textContent = '🎤';
+
+        chatForm.dispatchEvent(new Event('submit'));
+      };
+
+      recognition.onerror = () => {
+        voiceBtn.textContent = '🎤';
+        alert('Voice input failed. Try again.');
+      };
+    } else {
+      voiceBtn.disabled = true;
+      voiceBtn.title = "Speech recognition not supported.";
+    }
+
+    // MOCK web search function: simulate async search
+    async function searchWeb(query) {
+      // In a real app, call your backend API that returns search results
+      // Example: return await fetch('/api/search?query=' + encodeURIComponent(query)).then(r => r.json());
+
+      // Simulated delay & dummy response
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(`(Simulated web search result for: "${query}")\nTry checking detailed explanations or videos online.`);
+        }, 1500);
+      });
+    }
+
+    // Screenshot Upload & OCR with web search fallback
+    imageBtn.addEventListener('click', () => {
+      imageInput.click();
+    });
+
+    imageInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      appendMessage('Processing image...', 'bot');
+
+      try {
+        // Show image preview in chat
+        const imgURL = URL.createObjectURL(file);
+        const imgHTML = `<img src="${imgURL}" alt="Uploaded screenshot" />`;
+        appendHTMLMessage(imgHTML, 'user');
+
+        // Run OCR on image
+        const { data: { text } } = await Tesseract.recognize(
+          file,
+          'eng',
+          { logger: m => { /* optionally show progress here */ } }
+        );
+
+        // Remove last "Processing image..." bot message
+        const lastBotMsg = [...chatBox.querySelectorAll('.msg.bot')].pop();
+        if (lastBotMsg && lastBotMsg.textContent === 'Processing image...') {
+          chatBox.removeChild(lastBotMsg);
+        }
+
+        // Clean extracted text
+        const extracted = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+        if (!extracted) {
+          appendMessage("Couldn't detect any text from image.", 'bot', true);
+          return;
+        }
+
+        appendMessage(extracted, 'user');
+
+        // Try to solve locally first
+        let answer = solveMath(extracted);
+        if (answer) {
+          appendMessage(answer, 'bot');
+        } else {
+          // If local solve fails, do web search
+          appendMessage('No direct solution found locally. Searching web...', 'bot');
+          const webAnswer = await searchWeb(extracted);
+          appendMessage(webAnswer, 'bot');
+        }
+
+      } catch (err) {
+        // Remove "Processing image..." message
+        const lastBotMsg = [...chatBox.querySelectorAll('.msg.bot')].pop();
+        if (lastBotMsg && lastBotMsg.textContent === 'Processing image...') {
+          chatBox.removeChild(lastBotMsg);
+        }
+        appendMessage("Error processing image.", 'bot', true);
+      } finally {
+        imageInput.value = ''; // reset input for next upload
+      }
+    });
+  </script>
+</body>
+</html>
